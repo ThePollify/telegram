@@ -1,5 +1,6 @@
 import logging
 
+from aiogram import Dispatcher
 from aiogram.types import Update
 from aiogram.utils.exceptions import MessageNotModified
 from aiogram.utils.executor import start_polling
@@ -10,6 +11,7 @@ import bot
 import models
 import api
 import states
+import commands
 import handlers
 
 logging.basicConfig(level=logging.INFO)
@@ -26,5 +28,9 @@ async def error_handler(upd: Update, exc: Exception) -> bool | None:
     return None
 
 
+async def on_startup(dispatcher: Dispatcher) -> None:
+    await bot.bot.set_my_commands(commands.global_commands)
+
+
 if __name__ == "__main__":
-    start_polling(bot.dp)
+    start_polling(bot.dp, on_startup=on_startup)

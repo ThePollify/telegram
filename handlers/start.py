@@ -2,7 +2,8 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import ContentType, ForceReply, Message
 
 import handlers
-from bot import dp
+from bot import bot, dp
+from commands import code_state_commands, target_scope
 from states import CodeState
 
 
@@ -13,15 +14,19 @@ async def start_command(msg: Message, state: FSMContext) -> None:
 
     if len(args) == 0:
         await msg.reply(
-            "Please send me connection code",
+            "Please send me connection code.\nType /cancel to cancel connection",
             reply_markup=ForceReply.create("Connection code"),
         )
         await CodeState.wait_code.set()
+        await bot.set_my_commands(code_state_commands, target_scope(msg.from_user.id))
     else:
         try:
             poll_id = int(args)
         except ValueError:
-            await msg.reply("Connection code is incorrect")
+            await msg.reply(
+                "Connection code is incorrect.\n"
+                "Try again or type /cancel to cancel connection."
+            )
             return
 
         await handlers.poll.start_answers_state(poll_id, msg, state)
@@ -30,6 +35,7 @@ async def start_command(msg: Message, state: FSMContext) -> None:
 @dp.message_handler(commands=["cancel"], state=CodeState)
 async def cancel_command(msg: Message, state: FSMContext) -> None:
     await msg.reply("Operation canceled. Send me /start to try again.")
+    await bot.delete_my_commands(target_scope(msg.from_user.id))
     await state.finish()
 
 
@@ -39,7 +45,8 @@ async def wait_code_handler(msg: Message, state: FSMContext) -> None:
         poll_id = int(msg.text)
     except ValueError:
         await msg.reply(
-            "Connection code is incorrect. Try again.",
+            "Connection code is incorrect.\n"
+            "Try again or type /cancel to cancel connection.",
             reply_markup=ForceReply.create("Connection code"),
         )
         return

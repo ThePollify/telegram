@@ -7,7 +7,6 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import (
     CallbackQuery,
     ContentType,
-    ForceReply,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
@@ -16,7 +15,8 @@ from aiogram.utils.callback_data import CallbackData
 
 import api
 import models
-from bot import dp
+from bot import bot, dp
+from commands import answers_state_commands, target_scope
 from states import AnswersState
 
 option_callback_data = CallbackData("option", "index")
@@ -107,20 +107,23 @@ async def start_answers_state(
             "You are connected to the presentation, please wait for the new questions. Type /exit to exit.",
             reply_markup=exit_buttons,
         )
+
+    await bot.set_my_commands(answers_state_commands, target_scope(msg.from_user.id))
     await wait_next_question(msg, queue, state)
 
 
-async def stop_answers_state(
-    msg: Message,
-    task: Task[None],
-    state: FSMContext,
-) -> None:
+async def stop_answers_state(user_id: int, state: FSMContext) -> None:
+    task = questions_pull.pop(user_id)[1]
+
     async with state.proxy() as data:
         await data["message"].edit_text(
             "You are disconnected from the presentation."
             " To connect again scan the QR code from the presentation or enter /start and enter the connection code."
         )
+
     task.cancel()
+    await task
+    await bot.delete_my_commands(target_scope(user_id))
     await state.finish()
 
 
@@ -345,17 +348,13 @@ async def change_question_handler(
 @dp.message_handler(commands=["exit"], state=AnswersState)
 async def exit_command_handler(msg: Message, state: FSMContext) -> None:
     await msg.delete()
-    await stop_answers_state(msg, questions_pull.pop(msg.from_user.id)[1], state)
+    await stop_answers_state(msg.from_user.id, state)
 
 
 @dp.callback_query_handler(exit_callback_data.filter(), state=AnswersState)
 async def exit_handler(clb: CallbackQuery, state: FSMContext) -> None:
-    await stop_answers_state(
-        clb.message,
-        questions_pull.pop(clb.from_user.id)[1],
-        state,
-    )
     await clb.answer()
+    await stop_answers_state(clb.from_user.id, state)
 
 
 @dp.callback_query_handler(send_callback_data.filter(), state=AnswersState)
