@@ -164,8 +164,16 @@ def get_selector_buttons(
     selected: set[int],
 ) -> InlineKeyboardMarkup:
     buttons = InlineKeyboardMarkup()
+    max_checked = (
+        question.max_checked
+        if question.max_checked is not None
+        else len(question.options)
+    )
 
     for index, option in enumerate(question.options):
+        if len(selected) == max_checked and index in selected:
+            continue
+
         buttons.row(
             InlineKeyboardButton(
                 f"{'●' if index in selected else '○'} {option.label}",
@@ -173,11 +181,6 @@ def get_selector_buttons(
             )
         )
 
-    max_checked = (
-        question.max_checked
-        if question.max_checked is not None
-        else len(question.options)
-    )
     if question.min_checked <= len(selected) <= max_checked:
         buttons.row(send_button)
 
