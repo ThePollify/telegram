@@ -320,7 +320,9 @@ async def start_text_answer(
     await AnswersState.text.set()
 
     async with state.proxy() as data:
-        await data["message"].edit_text(question_text(question))
+        await data["message"].edit_text(
+            f"{question_text(question)}\n\nSend a message to reply."
+        )
 
 
 @dp.callback_query_handler(change_question_callback_data.filter(), state=AnswersState)
@@ -392,7 +394,8 @@ async def send_handler(clb: CallbackQuery, state: FSMContext) -> None:
         data["question"] = None
 
     await clb.message.edit_text(
-        "Thanks for the answer, please wait for the next questions."
+        "Thanks for the answer, please wait for the next questions.\n"
+        "If the presentation was stopped type /exit."
     )
     await clb.answer()
 
@@ -635,19 +638,19 @@ async def text_answer_handler(msg: Message, state: FSMContext) -> None:
         question: models.poll.TextQuestion = data["question"]
 
         if question.min_length is not None and len(msg.text) < question.min_length:
-            data["message"].edit_text(
-                f"Message length must be greater than {question.min_length}"
+            await data["message"].edit_text(
+                f"Message length must be greater than {question.min_length-1}"
             )
             return
         if question.max_length is not None and len(msg.text) > question.max_length:
-            data["message"].edit_text(
-                f"Message length must be less than {question.min_length}"
+            await data["message"].edit_text(
+                f"Message length must be less than {question.max_length+1}"
             )
             return
 
         data["text"] = msg.text
         await data["message"].edit_text(
-            f"You answer is «{msg.text}».",
+            f"You answer is «{msg.text}».\nSend a message to change your answer.",
             reply_markup=InlineKeyboardMarkup().row(send_button),
         )
 
