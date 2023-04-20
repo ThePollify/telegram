@@ -171,7 +171,7 @@ def get_selector_buttons(
     )
 
     for index, option in enumerate(question.options):
-        if len(selected) == max_checked and index in selected:
+        if len(selected) == max_checked and index not in selected:
             continue
 
         buttons.row(
