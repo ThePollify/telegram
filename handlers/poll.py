@@ -317,10 +317,7 @@ async def start_text_answer(
     await AnswersState.text.set()
 
     async with state.proxy() as data:
-        await data["message"].edit_text(
-            question_text(question),
-            reply_markup=ForceReply.create("You answer"),
-        )
+        await data["message"].edit_text(question_text(question))
 
 
 @dp.callback_query_handler(change_question_callback_data.filter(), state=AnswersState)
@@ -650,7 +647,7 @@ async def text_answer_handler(msg: Message, state: FSMContext) -> None:
             return
 
         data["text"] = msg.text
-        data["message"].edit_text(
+        await data["message"].edit_text(
             f"You answer is «{msg.text}».",
             reply_markup=InlineKeyboardMarkup().row(send_button),
         )
