@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  pollify-bot:
+    build: "."
+    restart: "always"
+
+    environment:
+      - TOKEN=${TOKEN} 
+      - API_URL=${API_URL}
+      - WEBSOCKET_URL=${WEBSOCKET_URL}
