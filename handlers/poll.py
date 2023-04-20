@@ -1,4 +1,5 @@
 from asyncio import Queue, Task
+from html import escape
 from json import loads
 from uuid import UUID
 
@@ -148,6 +149,16 @@ async def wait_next_question(
         await start_text_answer(msg, question, state)
 
 
+def question_text(question: models.poll.Question) -> str:
+    if question.description is not None:
+        return (
+            f"<b>{escape(question.label)}</b>\n\n"
+            f"<i>{escape(question.description)}</i>"
+        )
+    else:
+        return f"<b>{escape(question.label)}</b>\n"
+
+
 def get_selector_buttons(
     question: models.poll.SelectorQuestion,
     selected: set[int],
@@ -183,7 +194,7 @@ async def start_selector_answer(
     selected: set[int] = set()
     async with state.proxy() as data:
         await data["message"].edit_text(
-            question.label,
+            question_text(question),
             reply_markup=get_selector_buttons(question, selected),
         )
 
@@ -220,7 +231,7 @@ async def start_slider_answer(
     sliders: list[int | None] = [None] * len(question.options)
     async with state.proxy() as data:
         await data["message"].edit_text(
-            question.label,
+            question_text(question),
             reply_markup=get_slider_buttons(question, sliders),
         )
 
@@ -288,7 +299,7 @@ async def start_top_list_answer(
     ranks: list[int] = []
     async with state.proxy() as data:
         await data["message"].edit_text(
-            question.label,
+            question_text(question),
             reply_markup=get_top_list_buttons(question, ranks),
         )
 
@@ -304,7 +315,7 @@ async def start_text_answer(
 
     async with state.proxy() as data:
         await data["message"].edit_text(
-            question.label,
+            question_text(question),
             reply_markup=ForceReply.create("You answer"),
         )
 
@@ -451,7 +462,7 @@ async def cancel_slider_value_handler(
 
         data.pop("index")
         await data["message"].edit_text(
-            question.label,
+            question_text(question),
             reply_markup=get_slider_buttons(question, data["sliders"]),
         )
 
@@ -490,7 +501,7 @@ async def slider_value_handler(msg: Message, state: FSMContext) -> None:
         data.pop("index")
 
         await data["message"].edit_text(
-            question.label,
+            question_text(question),
             reply_markup=get_slider_buttons(question, sliders),
         )
 
@@ -557,7 +568,7 @@ async def top_list_remove_option_handler(
         ranks.pop(index)
 
         await clb.message.edit_text(
-            question.label,
+            question_text(question),
             reply_markup=get_top_list_buttons(question, ranks),
         )
 
@@ -579,7 +590,7 @@ async def cancel_top_list_select_option_handler(
         question: models.poll.TopListQuestion = data["question"]
 
         await data["message"].edit_text(
-            question.label,
+            question_text(question),
             reply_markup=get_top_list_buttons(question, data["ranks"]),
         )
 
@@ -610,7 +621,7 @@ async def top_list_select_option_handler(
             ranks[edit_index] = index
 
         await clb.message.edit_text(
-            question.label,
+            question_text(question),
             reply_markup=get_top_list_buttons(question, ranks),
         )
 
