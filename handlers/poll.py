@@ -652,6 +652,6 @@ async def text_answer_handler(msg: Message, state: FSMContext) -> None:
         )
 
 
-@dp.message_handler(content_types=[ContentType.TEXT], state=AnswersState)
+@dp.message_handler(content_types=[ContentType.ANY], state=AnswersState)
 async def other_message_handler(msg: Message) -> None:
     await msg.delete()
